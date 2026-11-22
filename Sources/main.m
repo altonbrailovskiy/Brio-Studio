@@ -82,13 +82,15 @@
  self.videoQueue=dispatch_queue_create("studio.brio.video",DISPATCH_QUEUE_SERIAL);
  self.analysisQueue=dispatch_queue_create("studio.brio.analysis",DISPATCH_QUEUE_SERIAL);
  self.imageContext=[CIContext contextWithOptions:@{kCIContextUseSoftwareRenderer:@NO}];
- // One-time migration of saved looks from the pre-1.1 bundle ID (no-op in the sandbox).
+ // One-time migration of saved looks from earlier bundle IDs, newest first (no-op in the sandbox).
  NSUserDefaults *defaults=NSUserDefaults.standardUserDefaults;
  if(![defaults boolForKey:@"migratedLegacyDefaults"]){
-  NSUserDefaults *legacy=[[NSUserDefaults alloc]initWithSuiteName:@"local.brio.studio"];
-  for(NSString *key in @[@"presets",@"lastPreset",@"appliedPreset",@"restorePreset"]){
-   id value=[legacy objectForKey:key];
-   if(value && ![defaults objectForKey:key])[defaults setObject:value forKey:key];
+  for(NSString *legacyID in @[@"com.altonbr.briostudio",@"local.brio.studio"]){
+   NSUserDefaults *legacy=[[NSUserDefaults alloc]initWithSuiteName:legacyID];
+   for(NSString *key in @[@"presets",@"lastPreset",@"appliedPreset",@"restorePreset"]){
+    id value=[legacy objectForKey:key];
+    if(value && ![defaults objectForKey:key])[defaults setObject:value forKey:key];
+   }
   }
   [defaults setBool:YES forKey:@"migratedLegacyDefaults"];
  }

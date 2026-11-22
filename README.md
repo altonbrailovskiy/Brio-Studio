@@ -100,7 +100,7 @@ Saved-look status compares the current reported controls with the selected prese
 - **Save** with the same name to update a preset.
 - **Apply** to discard edits and restore it.
 
-Presets live in macOS `UserDefaults` for `com.altonbr.briostudio`. Looks saved by version 1.0 (`local.brio.studio`) are copied over automatically the first time 1.1 launches.
+Presets live in macOS `UserDefaults` for `com.altonbr.studiocamcontrols`. Looks saved by earlier builds (`local.brio.studio` or `com.altonbr.briostudio`) are copied over automatically the first time 1.1 launches.
 
 ## Preview tools
 
@@ -212,7 +212,7 @@ Open the sandboxed app and check that **Start preview**, the control sliders, **
 
 One-time setup at [developer.apple.com](https://developer.apple.com/account/resources):
 
-1. **Identifiers:** register an App ID for `com.altonbr.briostudio`. No extra capabilities are needed.
+1. **Identifiers:** register an App ID for `com.altonbr.studiocamcontrols`. No extra capabilities are needed.
 2. **Certificates:** create an **Apple Distribution** and a **Mac Installer Distribution** certificate (or use **Xcode → Settings → Accounts → Manage Certificates**).
 3. **Profiles:** create a **Mac App Store Connect** profile for that App ID with the Apple Distribution certificate. Download it into this folder as `StudioCamControls_AppStore.provisionprofile` (it's git-ignored).
 4. **App Store Connect:** create a new macOS app with the same bundle ID.
