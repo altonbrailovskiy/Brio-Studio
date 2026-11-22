@@ -82,6 +82,16 @@
  self.videoQueue=dispatch_queue_create("studio.brio.video",DISPATCH_QUEUE_SERIAL);
  self.analysisQueue=dispatch_queue_create("studio.brio.analysis",DISPATCH_QUEUE_SERIAL);
  self.imageContext=[CIContext contextWithOptions:@{kCIContextUseSoftwareRenderer:@NO}];
+ // One-time migration of saved looks from the pre-1.1 bundle ID (no-op in the sandbox).
+ NSUserDefaults *defaults=NSUserDefaults.standardUserDefaults;
+ if(![defaults boolForKey:@"migratedLegacyDefaults"]){
+  NSUserDefaults *legacy=[[NSUserDefaults alloc]initWithSuiteName:@"local.brio.studio"];
+  for(NSString *key in @[@"presets",@"lastPreset",@"appliedPreset",@"restorePreset"]){
+   id value=[legacy objectForKey:key];
+   if(value && ![defaults objectForKey:key])[defaults setObject:value forKey:key];
+  }
+  [defaults setBool:YES forKey:@"migratedLegacyDefaults"];
+ }
  self.camera=[Camera new]; self.saved=[[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"presets"] mutableCopy]?:[NSMutableDictionary new];
  NSMenu *menu=[NSMenu new]; NSMenuItem *appItem=[NSMenuItem new]; [menu addItem:appItem]; NSMenu *appMenu=[NSMenu new]; appItem.submenu=appMenu;
  [appMenu addItemWithTitle:@"Quit Brio Studio" action:@selector(terminate:) keyEquivalent:@"q"];
