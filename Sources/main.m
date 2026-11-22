@@ -94,13 +94,13 @@
  }
  self.camera=[Camera new]; self.saved=[[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"presets"] mutableCopy]?:[NSMutableDictionary new];
  NSMenu *menu=[NSMenu new]; NSMenuItem *appItem=[NSMenuItem new]; [menu addItem:appItem]; NSMenu *appMenu=[NSMenu new]; appItem.submenu=appMenu;
- [appMenu addItemWithTitle:@"Quit Brio Studio" action:@selector(terminate:) keyEquivalent:@"q"];
+ [appMenu addItemWithTitle:@"Quit Studio Cam Controls" action:@selector(terminate:) keyEquivalent:@"q"];
  NSMenuItem *editItem=[NSMenuItem new]; editItem.title=@"Edit"; [menu addItem:editItem]; NSMenu *edit=[NSMenu new]; editItem.submenu=edit;
  [edit addItemWithTitle:@"Cut" action:@selector(cut:) keyEquivalent:@"x"]; [edit addItemWithTitle:@"Copy" action:@selector(copy:) keyEquivalent:@"c"]; [edit addItemWithTitle:@"Paste" action:@selector(paste:) keyEquivalent:@"v"]; [edit addItemWithTitle:@"Select All" action:@selector(selectAll:) keyEquivalent:@"a"]; NSApp.mainMenu=menu;
  self.window=[[NSWindow alloc]initWithContentRect:NSMakeRect(0,0,1160,920) styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskMiniaturizable|NSWindowStyleMaskResizable backing:NSBackingStoreBuffered defer:NO];
- self.window.title=@"Brio Studio"; self.window.minSize=NSMakeSize(1080,880); self.window.appearance=[NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+ self.window.title=@"Studio Cam Controls"; self.window.minSize=NSMakeSize(1080,880); self.window.appearance=[NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
  NSView *root=self.window.contentView; root.wantsLayer=YES; root.layer.backgroundColor=[NSColor colorWithSRGBRed:0.065 green:0.075 blue:0.09 alpha:1].CGColor;
- NSTextField *title=[self label:@"Brio Studio" size:28]; title.font=[NSFont systemFontOfSize:28 weight:NSFontWeightSemibold];
+ NSTextField *title=[self label:@"Studio Cam Controls" size:28]; title.font=[NSFont systemFontOfSize:28 weight:NSFontWeightSemibold];
  NSTextField *subtitle=[self label:@"YOUR CAMERA. YOUR LIGHT." size:11]; subtitle.textColor=NSColor.secondaryLabelColor;
  NSStackView *heading=[self stack:@[subtitle,title] vertical:YES]; heading.spacing=5;
  NSButton *lock=[self button:@"Lock current look" action:@selector(lockLook:)]; lock.bezelColor=NSColor.systemTealColor;
@@ -265,7 +265,7 @@
  dispatch_async(self.videoQueue,^{ [s stopRunning]; dispatch_async(dispatch_get_main_queue(),^{ [self.previewView.preview removeFromSuperlayer]; self.previewView.preview=nil; self.session=nil; self.previewMessage.hidden=NO; self.previewMessage.stringValue=@"Preview stopped\n\nHardware settings remain applied."; self.previewButton.title=@"Start preview"; self.previewButton.enabled=YES; }); }); return; }
  self.previewButton.enabled=NO;
  [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted){ dispatch_async(dispatch_get_main_queue(),^{
- if(!granted) { self.previewMessage.stringValue=@"Camera access is off.\nAllow Brio Studio in System Settings → Privacy & Security → Camera."; self.previewButton.enabled=YES; return; }
+ if(!granted) { self.previewMessage.stringValue=@"Camera access is off.\nAllow Studio Cam Controls in System Settings → Privacy & Security → Camera."; self.previewButton.enabled=YES; return; }
  [self startPreview]; }); }];
 }
 - (void)startPreview {

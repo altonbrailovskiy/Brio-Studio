@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Builds Brio Studio.app and the brio-probe CLI.
+# Builds Studio Cam Controls.app and the brio-probe CLI.
 #
 #   ./build.sh             Local build, ad-hoc signed (default)
 #   ./build.sh --sandbox   Local build with App Sandbox on, to test App Store compatibility
@@ -17,7 +17,7 @@
 #   INSTALLER_ID       Installer identity for --appstore (default: first
 #                      "3rd Party Mac Developer Installer" / "Mac Installer Distribution")
 #   PROVISIONING_PROFILE  Mac App Store profile for --appstore
-#                      (default: ./BrioStudio_AppStore.provisionprofile)
+#                      (default: ./StudioCamControls_AppStore.provisionprofile)
 set -euo pipefail
 cd "${0:A:h}"
 
@@ -31,7 +31,7 @@ case "${1:-}" in
   *) print -u2 "Unknown option: $1 (use --sandbox, --release, --appstore, or no option)"; exit 64 ;;
 esac
 
-APP="build/Brio Studio.app"
+APP="build/Studio Cam Controls.app"
 PLIST="$APP/Contents/Info.plist"
 ARCHS=(-arch arm64 -arch x86_64)
 
@@ -63,7 +63,7 @@ xcrun clang -fobjc-arc -O2 -Wall -Wextra -Wno-unused-parameter -Wno-deprecated-d
   Sources/Camera.m Sources/PreviewTools.m Sources/Optimizer.m Sources/main.m \
   -framework Cocoa -framework AVFoundation -framework Vision -framework CoreImage \
   -framework CoreMedia -framework CoreVideo -framework IOKit \
-  -o "$APP/Contents/MacOS/BrioStudio"
+  -o "$APP/Contents/MacOS/StudioCamControls"
 
 cp Assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp Assets/PrivacyInfo.xcprivacy "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
@@ -84,7 +84,7 @@ case "$MODE" in
     ;;
 
   sandbox)
-    codesign --force --sign - --entitlements Entitlements/BrioStudio-AppStore.entitlements "$APP"
+    codesign --force --sign - --entitlements Entitlements/StudioCamControls-AppStore.entitlements "$APP"
     ;;
 
   release)
@@ -96,17 +96,17 @@ case "$MODE" in
     fi
     print "Signing with: $IDENTITY"
     codesign --force --options runtime --timestamp \
-      --entitlements Entitlements/BrioStudio-DeveloperID.entitlements \
+      --entitlements Entitlements/StudioCamControls-DeveloperID.entitlements \
       --sign "$IDENTITY" "$APP"
     codesign --verify --deep --strict --verbose=2 "$APP"
     ;;
 
   appstore)
-    PROFILE="${PROVISIONING_PROFILE:-BrioStudio_AppStore.provisionprofile}"
+    PROFILE="${PROVISIONING_PROFILE:-StudioCamControls_AppStore.provisionprofile}"
     if [[ ! -f "$PROFILE" ]]; then
       print -u2 "Provisioning profile not found: $PROFILE"
       print -u2 "Download your Mac App Store profile from developer.apple.com and save it here as"
-      print -u2 "BrioStudio_AppStore.provisionprofile, or set PROVISIONING_PROFILE."
+      print -u2 "StudioCamControls_AppStore.provisionprofile, or set PROVISIONING_PROFILE."
       exit 1
     fi
 
@@ -133,8 +133,8 @@ case "$MODE" in
 
     cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
 
-    ENTITLEMENTS="build/BrioStudio-AppStore.signed.entitlements"
-    cp Entitlements/BrioStudio-AppStore.entitlements "$ENTITLEMENTS"
+    ENTITLEMENTS="build/StudioCamControls-AppStore.signed.entitlements"
+    cp Entitlements/StudioCamControls-AppStore.entitlements "$ENTITLEMENTS"
     /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string $TEAM_ID.$APP_BUNDLE_ID" "$ENTITLEMENTS"
     /usr/libexec/PlistBuddy -c "Add :com.apple.developer.team-identifier string $TEAM_ID" "$ENTITLEMENTS"
 
@@ -142,7 +142,7 @@ case "$MODE" in
     codesign --force --timestamp --entitlements "$ENTITLEMENTS" --sign "$DIST_IDENTITY" "$APP"
     codesign --verify --deep --strict --verbose=2 "$APP"
 
-    PKG="build/Brio-Studio-$VERSION-$BUILD.pkg"
+    PKG="build/Studio-Cam-Controls-$VERSION-$BUILD.pkg"
     rm -f "$PKG"
     print "Signing installer with: $INSTALLER_IDENTITY"
     productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" "$PKG"
