@@ -8,7 +8,7 @@ Native macOS camera controls for the **Logitech Brio 100** (USB `046d:094c`).
 
 - Requires **macOS 14** or later
 - No third-party dependencies
-- No network access
+- No network access. See the [privacy policy](PRIVACY.md)
 
 ## Contents
 
