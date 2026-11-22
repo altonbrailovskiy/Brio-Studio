@@ -1,8 +1,10 @@
-# Brio Studio
+# Studio Cam Controls
 
 [![Buy Me a Beer](https://img.shields.io/badge/Buy%20Me%20a%20Beer-%F0%9F%8D%BA-F5A623?style=for-the-badge&logo=buymeacoffee&logoColor=1F1F1F&labelColor=F5A623)](https://www.buymeacoffee.com/alton_br)
 
 Native macOS camera controls for the **Logitech Brio 100** (USB `046d:094c`).
+
+<sub>Formerly Brio Studio. Not affiliated with or endorsed by Logitech. Logitech and Brio are trademarks of Logitech.</sub>
 
 - Requires **macOS 14** or later
 - No third-party dependencies
@@ -34,7 +36,7 @@ Install the Xcode Command Line Tools (`xcode-select --install`), then run from t
 ./build.sh
 ```
 
-This builds a universal (Apple silicon and Intel) app at `build/Brio Studio.app`, ad-hoc signed for your Mac, plus a diagnostic CLI at `build/brio-probe`.
+This builds a universal (Apple silicon and Intel) app at `build/Studio Cam Controls.app`, ad-hoc signed for your Mac, plus a diagnostic CLI at `build/brio-probe`.
 
 | Command | Result |
 | --- | --- |
@@ -47,7 +49,7 @@ See [Distribution](#distribution) for notarizing a release.
 
 ## Open
 
-Open `build/Brio Studio.app` in Finder. You can optionally drag it into **Applications**.
+Open `build/Studio Cam Controls.app` in Finder. You can optionally drag it into **Applications**.
 
 > [!NOTE]
 > The app is ad-hoc signed, not notarized. If macOS blocks it the first time, right-click the app, choose **Open**, then confirm.
@@ -168,7 +170,7 @@ The checkbox does not directly toggle the camera firmware's backlight-compensati
 
 - **USB access unavailable:** close other camera-control apps and click **Reconnect**. The app never seizes the device or detaches Apple's camera driver.
 - **After unplugging/replugging:** click **Reconnect**. Restart preview if necessary.
-- **Preview permission denied:** enable Brio Studio in **System Settings → Privacy & Security → Camera**.
+- **Preview permission denied:** enable Studio Cam Controls in **System Settings → Privacy & Security → Camera**.
 - **Sliders greyed out:** exposure/gain and temperature sliders are disabled in automatic modes.
 - **Low frame rate:** long exposures can reduce frame rate.
 - **Noisy image:** raising gain can introduce noise.
@@ -193,7 +195,7 @@ Each release:
 ./notarize.sh
 ```
 
-This produces `build/Brio-Studio-<version>.zip`, notarized and stapled, ready to attach to a GitHub Release. It opens on other Macs without the "unidentified developer" warning.
+This produces `build/Studio-Cam-Controls-<version>.zip`, notarized and stapled, ready to attach to a GitHub Release. It opens on other Macs without the "unidentified developer" warning.
 
 ### Mac App Store compatibility test
 
@@ -212,7 +214,7 @@ One-time setup at [developer.apple.com](https://developer.apple.com/account/reso
 
 1. **Identifiers:** register an App ID for `com.altonbr.briostudio`. No extra capabilities are needed.
 2. **Certificates:** create an **Apple Distribution** and a **Mac Installer Distribution** certificate (or use **Xcode → Settings → Accounts → Manage Certificates**).
-3. **Profiles:** create a **Mac App Store Connect** profile for that App ID with the Apple Distribution certificate. Download it into this folder as `BrioStudio_AppStore.provisionprofile` (it's git-ignored).
+3. **Profiles:** create a **Mac App Store Connect** profile for that App ID with the Apple Distribution certificate. Download it into this folder as `StudioCamControls_AppStore.provisionprofile` (it's git-ignored).
 4. **App Store Connect:** create a new macOS app with the same bundle ID.
 
 Each upload:
@@ -221,14 +223,14 @@ Each upload:
 BUILD_NUMBER=3 ./build.sh --appstore
 ```
 
-This creates `build/Brio-Studio-<version>-<build>.pkg`. Upload it with Apple's [Transporter](https://apps.apple.com/app/transporter/id1450874784) app. Every upload needs a higher `BUILD_NUMBER` than the last.
+This creates `build/Studio-Cam-Controls-<version>-<build>.pkg`. Upload it with Apple's [Transporter](https://apps.apple.com/app/transporter/id1450874784) app. Every upload needs a higher `BUILD_NUMBER` than the last.
 
 The app includes a privacy manifest (`Assets/PrivacyInfo.xcprivacy`) declaring no tracking, no collected data, and `UserDefaults` use for its own settings.
 
 ## Diagnostics
 
 > [!IMPORTANT]
-> Close Brio Studio first. Only one control connection can own the USB device.
+> Close Studio Cam Controls first. Only one control connection can own the USB device.
 
 Read capabilities and current values as JSON:
 

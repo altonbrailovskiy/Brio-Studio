@@ -13,7 +13,7 @@
 set -euo pipefail
 cd "${0:A:h}"
 
-APP="build/Brio Studio.app"
+APP="build/Studio Cam Controls.app"
 PROFILE="${NOTARY_PROFILE:-brio-notary}"
 
 if [[ ! -d "$APP" ]]; then
@@ -27,8 +27,8 @@ if [[ "$SIGNATURE" != *"Authority=Developer ID Application"* ]]; then
 fi
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
-UPLOAD="build/BrioStudio-notarize.zip"
-OUT="build/Brio-Studio-$VERSION.zip"
+UPLOAD="build/StudioCamControls-notarize.zip"
+OUT="build/Studio-Cam-Controls-$VERSION.zip"
 
 rm -f "$UPLOAD" "$OUT"
 ditto -c -k --keepParent "$APP" "$UPLOAD"
