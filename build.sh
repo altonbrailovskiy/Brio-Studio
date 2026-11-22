@@ -4,13 +4,20 @@
 #   ./build.sh             Local build, ad-hoc signed (default)
 #   ./build.sh --sandbox   Local build with App Sandbox on, to test App Store compatibility
 #   ./build.sh --release   Developer ID signed, hardened runtime, ready for ./notarize.sh
+#   ./build.sh --appstore  Apple Distribution signed .pkg for upload with Transporter
 #
 # Optional environment variables:
 #   BUNDLE_ID          Override the bundle identifier (default: value in Info.plist)
+#   BUILD_NUMBER       Override CFBundleVersion. Each App Store upload needs a higher one
 #   DEVELOPER_ID       Signing identity for --release, e.g.
 #                      "Developer ID Application: Alton Brailovskiy (TEAMID)".
 #                      If unset, the first Developer ID Application identity in
 #                      your keychain is used.
+#   DISTRIBUTION_ID    Signing identity for --appstore (default: first "Apple Distribution")
+#   INSTALLER_ID       Installer identity for --appstore (default: first
+#                      "3rd Party Mac Developer Installer" / "Mac Installer Distribution")
+#   PROVISIONING_PROFILE  Mac App Store profile for --appstore
+#                      (default: ./BrioStudio_AppStore.provisionprofile)
 set -euo pipefail
 cd "${0:A:h}"
 
@@ -19,12 +26,34 @@ case "${1:-}" in
   "") ;;
   --sandbox) MODE="sandbox" ;;
   --release) MODE="release" ;;
-  -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-  *) print -u2 "Unknown option: $1 (use --sandbox, --release, or no option)"; exit 64 ;;
+  --appstore) MODE="appstore" ;;
+  -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  *) print -u2 "Unknown option: $1 (use --sandbox, --release, --appstore, or no option)"; exit 64 ;;
 esac
 
 APP="build/Brio Studio.app"
+PLIST="$APP/Contents/Info.plist"
 ARCHS=(-arch arm64 -arch x86_64)
+
+find_identity() {
+  # Prints the first valid code-signing identity whose name starts with any of the given prefixes.
+  local prefix line
+  for prefix in "$@"; do
+    line=$(security find-identity -v -p codesigning 2>/dev/null | sed -n "s/.*\"\($prefix[^\"]*\)\".*/\1/p" | head -n 1)
+    if [[ -n "$line" ]]; then print -r -- "$line"; return 0; fi
+  done
+  return 1
+}
+
+find_installer_identity() {
+  # Installer certificates aren't code-signing identities, so search the basic policy.
+  local prefix line
+  for prefix in "$@"; do
+    line=$(security find-identity -v 2>/dev/null | sed -n "s/.*\"\($prefix[^\"]*\)\".*/\1/p" | head -n 1)
+    if [[ -n "$line" ]]; then print -r -- "$line"; return 0; fi
+  done
+  return 1
+}
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -37,23 +66,29 @@ xcrun clang -fobjc-arc -O2 -Wall -Wextra -Wno-unused-parameter -Wno-deprecated-d
   -o "$APP/Contents/MacOS/BrioStudio"
 
 cp Assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
-cp Info.plist "$APP/Contents/Info.plist"
+cp Assets/PrivacyInfo.xcprivacy "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
+cp Info.plist "$PLIST"
 if [[ -n "${BUNDLE_ID:-}" ]]; then
-  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$PLIST"
 fi
+if [[ -n "${BUILD_NUMBER:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST"
+fi
+APP_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$PLIST")
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")
+BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")
 
 case "$MODE" in
   local)
     codesign --force --sign - "$APP"
     ;;
+
   sandbox)
     codesign --force --sign - --entitlements Entitlements/BrioStudio-AppStore.entitlements "$APP"
     ;;
+
   release)
-    IDENTITY="${DEVELOPER_ID:-}"
-    if [[ -z "$IDENTITY" ]]; then
-      IDENTITY=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -n 1)
-    fi
+    IDENTITY="${DEVELOPER_ID:-$(find_identity "Developer ID Application: " || true)}"
     if [[ -z "$IDENTITY" ]]; then
       print -u2 "No Developer ID Application certificate found in your keychain."
       print -u2 "Create one in Xcode > Settings > Accounts > Manage Certificates, or set DEVELOPER_ID."
@@ -65,10 +100,59 @@ case "$MODE" in
       --sign "$IDENTITY" "$APP"
     codesign --verify --deep --strict --verbose=2 "$APP"
     ;;
+
+  appstore)
+    PROFILE="${PROVISIONING_PROFILE:-BrioStudio_AppStore.provisionprofile}"
+    if [[ ! -f "$PROFILE" ]]; then
+      print -u2 "Provisioning profile not found: $PROFILE"
+      print -u2 "Download your Mac App Store profile from developer.apple.com and save it here as"
+      print -u2 "BrioStudio_AppStore.provisionprofile, or set PROVISIONING_PROFILE."
+      exit 1
+    fi
+
+    PROFILE_PLIST="build/profile.plist"
+    security cms -D -i "$PROFILE" > "$PROFILE_PLIST"
+    TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" "$PROFILE_PLIST")
+    PROFILE_APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.application-identifier" "$PROFILE_PLIST")
+    if [[ "$PROFILE_APP_ID" != "$TEAM_ID.$APP_BUNDLE_ID" ]]; then
+      print -u2 "The profile is for $PROFILE_APP_ID, but the app is $TEAM_ID.$APP_BUNDLE_ID."
+      print -u2 "Create the profile for the $APP_BUNDLE_ID app ID, or set BUNDLE_ID to match it."
+      exit 1
+    fi
+
+    DIST_IDENTITY="${DISTRIBUTION_ID:-$(find_identity "Apple Distribution: " "3rd Party Mac Developer Application: " || true)}"
+    INSTALLER_IDENTITY="${INSTALLER_ID:-$(find_installer_identity "3rd Party Mac Developer Installer: " "Mac Installer Distribution: " || true)}"
+    if [[ -z "$DIST_IDENTITY" ]]; then
+      print -u2 "No Apple Distribution certificate found. Create one in Xcode > Settings > Accounts > Manage Certificates."
+      exit 1
+    fi
+    if [[ -z "$INSTALLER_IDENTITY" ]]; then
+      print -u2 "No Mac Installer Distribution certificate found. Create one in Xcode > Settings > Accounts > Manage Certificates."
+      exit 1
+    fi
+
+    cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
+
+    ENTITLEMENTS="build/BrioStudio-AppStore.signed.entitlements"
+    cp Entitlements/BrioStudio-AppStore.entitlements "$ENTITLEMENTS"
+    /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string $TEAM_ID.$APP_BUNDLE_ID" "$ENTITLEMENTS"
+    /usr/libexec/PlistBuddy -c "Add :com.apple.developer.team-identifier string $TEAM_ID" "$ENTITLEMENTS"
+
+    print "Signing app with: $DIST_IDENTITY"
+    codesign --force --timestamp --entitlements "$ENTITLEMENTS" --sign "$DIST_IDENTITY" "$APP"
+    codesign --verify --deep --strict --verbose=2 "$APP"
+
+    PKG="build/Brio-Studio-$VERSION-$BUILD.pkg"
+    rm -f "$PKG"
+    print "Signing installer with: $INSTALLER_IDENTITY"
+    productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" "$PKG"
+    rm -f "$PROFILE_PLIST"
+    printf 'Built %s. Upload it with the Transporter app.\n' "$PKG"
+    ;;
 esac
 
 xcrun clang -fobjc-arc -O2 -Wno-deprecated-declarations -mmacosx-version-min=14.0 "${ARCHS[@]}" \
   Sources/Camera.m Sources/probe.m -framework Foundation -framework IOKit \
   -o build/brio-probe
 
-printf 'Built %s (%s)\n' "$APP" "$MODE"
+printf 'Built %s %s (%s), %s, %s mode\n' "$APP" "$VERSION" "$BUILD" "$APP_BUNDLE_ID" "$MODE"
