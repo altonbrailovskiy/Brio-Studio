@@ -21,6 +21,7 @@ Native macOS camera controls for the **Logitech Brio 100** (USB `046d:094c`).
 - [Optimize once](#optimize-once)
 - [Backlit mode](#backlit-mode)
 - [Troubleshooting](#troubleshooting)
+- [Distribution](#distribution)
 - [Diagnostics](#diagnostics)
 - [Validation](#validation)
 - [Implementation](#implementation)
@@ -33,7 +34,15 @@ Install the Xcode Command Line Tools (`xcode-select --install`), then run from t
 ./build.sh
 ```
 
-This builds an ad-hoc signed local Mac app (`build/Brio Studio.app`) and a diagnostic CLI (`build/brio-probe`).
+This builds a universal (Apple silicon and Intel) app at `build/Brio Studio.app`, ad-hoc signed for your Mac, plus a diagnostic CLI at `build/brio-probe`.
+
+| Command | Result |
+| --- | --- |
+| `./build.sh` | Local build, ad-hoc signed |
+| `./build.sh --sandbox` | Local build with the App Sandbox on, for testing App Store compatibility |
+| `./build.sh --release` | Developer ID signed with the hardened runtime, ready to notarize |
+
+See [Distribution](#distribution) for notarizing a release.
 
 ## Open
 
@@ -162,6 +171,39 @@ The checkbox does not directly toggle the camera firmware's backlight-compensati
 - **Sliders greyed out:** exposure/gain and temperature sliders are disabled in automatic modes.
 - **Low frame rate:** long exposures can reduce frame rate.
 - **Noisy image:** raising gain can introduce noise.
+
+## Distribution
+
+### Notarized download (GitHub Releases)
+
+Requires a paid Apple Developer membership and a **Developer ID Application** certificate (create it in **Xcode → Settings → Accounts → Manage Certificates**).
+
+One-time setup: create an [app-specific password](https://account.apple.com) for your Apple ID, then store it for the notary tool:
+
+```sh
+xcrun notarytool store-credentials brio-notary \
+  --apple-id "you@example.com" --team-id "TEAMID" --password "app-specific-password"
+```
+
+Each release:
+
+```sh
+./build.sh --release
+./notarize.sh
+```
+
+This produces `build/Brio-Studio-<version>.zip`, notarized and stapled, ready to attach to a GitHub Release. It opens on other Macs without the "unidentified developer" warning.
+
+### Mac App Store compatibility test
+
+```sh
+./build.sh --sandbox
+```
+
+Open the sandboxed app and check that **Start preview**, the control sliders, **Lock current look**, and **Optimize once** all still work.
+
+> [!NOTE]
+> Sandboxed apps keep their settings in a separate container, so saved looks from the regular build don't appear in the sandboxed one.
 
 ## Diagnostics
 
