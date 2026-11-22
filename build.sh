@@ -39,7 +39,7 @@ find_identity() {
   # Prints the first valid code-signing identity whose name starts with any of the given prefixes.
   local prefix line
   for prefix in "$@"; do
-    line=$(security find-identity -v -p codesigning 2>/dev/null | sed -n "s/.*\"\($prefix[^\"]*\)\".*/\1/p" | head -n 1)
+    line=$(security find-identity -v -p codesigning 2>/dev/null | sed -n "s/.*\"\(${prefix}[^\"]*\)\".*/\1/p" | head -n 1)
     if [[ -n "$line" ]]; then print -r -- "$line"; return 0; fi
   done
   return 1
@@ -49,7 +49,7 @@ find_installer_identity() {
   # Installer certificates aren't code-signing identities, so search the basic policy.
   local prefix line
   for prefix in "$@"; do
-    line=$(security find-identity -v 2>/dev/null | sed -n "s/.*\"\($prefix[^\"]*\)\".*/\1/p" | head -n 1)
+    line=$(security find-identity -v 2>/dev/null | sed -n "s/.*\"\(${prefix}[^\"]*\)\".*/\1/p" | head -n 1)
     if [[ -n "$line" ]]; then print -r -- "$line"; return 0; fi
   done
   return 1
