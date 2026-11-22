@@ -74,16 +74,21 @@ fi
 if [[ -n "${BUILD_NUMBER:-}" ]]; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST"
 fi
+# Downloaded files (icons, profiles) can carry com.apple.quarantine and other
+# extended attributes, which the App Store rejects (ITMS-91109).
+strip_attributes() { xattr -cr "$APP"; }
 APP_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$PLIST")
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")
 BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")
 
 case "$MODE" in
   local)
+    strip_attributes
     codesign --force --sign - "$APP"
     ;;
 
   sandbox)
+    strip_attributes
     codesign --force --sign - --entitlements Entitlements/StudioCamControls-AppStore.entitlements "$APP"
     ;;
 
@@ -95,6 +100,7 @@ case "$MODE" in
       exit 1
     fi
     print "Signing with: $IDENTITY"
+    strip_attributes
     codesign --force --options runtime --timestamp \
       --entitlements Entitlements/StudioCamControls-DeveloperID.entitlements \
       --sign "$IDENTITY" "$APP"
@@ -132,6 +138,7 @@ case "$MODE" in
     fi
 
     cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
+    strip_attributes
 
     ENTITLEMENTS="build/StudioCamControls-AppStore.signed.entitlements"
     cp Entitlements/StudioCamControls-AppStore.entitlements "$ENTITLEMENTS"
